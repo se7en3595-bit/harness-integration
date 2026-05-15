@@ -1,0 +1,92 @@
+# AI Agent Harness Token优化模块 - 配置文件
+
+# ============================================================
+# 全局Token预算
+# ============================================================
+budget:
+  daily_limit: 100000        # 每日token上限
+  hourly_limit: 10000        # 每小时token上限
+  per_call_limit: 5000       # 单次调用token上限
+  alert_threshold: 0.8       # 告警阈值（80%触发）
+
+# ============================================================
+# 缓存配置
+# ============================================================
+cache:
+  l1_memory:
+    max_size: 1000           # LRU缓存最大条目数
+    ttl_seconds: 86400       # 缓存过期时间（24小时）
+  l2_pattern:
+    similarity_threshold: 0.75  # 模式匹配相似度阈值
+    max_patterns: 500        # 最大模式数
+  l3_context:
+    max_age_hours: 48        # 上下文最大存活时间
+    max_contexts: 200        # 最大上下文存储数
+
+# ============================================================
+# 上下文压缩配置
+# ============================================================
+compression:
+  compression_ratio: 0.3     # 目标压缩比
+  debug_keywords:            # 调试噪音关键词
+    - debug
+    - temp
+    - tmp
+    - log
+    - trace
+    - verbose
+    - console.log
+    - TODO
+    - FIXME
+  essential_fields:          # 保留的关键字段
+    - entities
+    - actions
+    - decisions
+    - errors
+    - state
+  max_items_per_field: 3     # 每字段最大保留条目数
+
+# ============================================================
+# 知识复用配置
+# ============================================================
+knowledge:
+  similarity_threshold: 0.7  # 知识复用相似度阈值
+  max_concepts_per_content: 20  # 每次最大提取概念数
+  node_types:                # 节点类型
+    - concept
+    - pattern
+    - skill
+    - fact
+    - chapter
+    - book
+    - decision
+
+# ============================================================
+# Prompt优化配置
+# ============================================================
+prompt:
+  default_budget: 10000      # 默认prompt预算
+  template_threshold: 8000   # 超过此长度启用模板化
+  truncation_marker: "... [已截断]"
+  max_context_items: 3       # 最大上下文条目数
+  max_constraints: 3         # 最大约束条目数
+
+# ============================================================
+# 监控配置
+# ============================================================
+monitoring:
+  enable_realtime: true      # 实时监控开关
+  report_interval_minutes: 60  # 报告生成间隔
+  alert_channels:            # 告警渠道
+    - console
+  history_retention_days: 7  # 历史数据保留天数
+
+# ============================================================
+# 模块开关
+# ============================================================
+modules:
+  cache_manager: true
+  context_compressor: true
+  knowledge_reuse: true
+  prompt_optimizer: true
+  token_monitor: true

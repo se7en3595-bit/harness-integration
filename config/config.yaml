@@ -1,0 +1,178 @@
+# AI Agent Harness 配置文件
+
+# 系统设置
+system:
+  name: "AI Agent Harness"
+  version: "1.0.0"
+  environment: "development"  # development, staging, production
+
+# 代理配置
+agents:
+  text_agent:
+    type: "text_agent"
+    model: "claude-3-sonnet-20240229"
+    temperature: 0.7
+    max_tokens: 1000
+    timeout: 30
+
+  browser_agent:
+    type: "browser_agent"
+    headless: false
+    timeout: 30000
+    viewport_width: 1200
+    viewport_height: 800
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+  search_agent:
+    type: "search_agent"
+    engines: ["google", "bing", "duckduckgo"]
+    max_results: 10
+    cache_enabled: true
+    cache_ttl: 3600
+
+# 测试场景配置
+scenarios:
+  basic:
+    enabled: true
+    difficulty: "basic"
+    test_count: 5
+    timeout: 60
+
+  web_navigation:
+    enabled: true
+    difficulty: "intermediate"
+    test_count: 3
+    timeout: 120
+
+  information_retrieval:
+    enabled: true
+    difficulty: "advanced"
+    test_count: 4
+    timeout: 180
+
+  multimodal_analysis:
+    enabled: false
+    difficulty: "expert"
+    test_count: 2
+    timeout: 300
+
+# 评估配置
+evaluation:
+  default_evaluator: "fuzzy_match"
+  weights:
+    accuracy: 0.6
+    efficiency: 0.2
+    usability: 0.2
+
+  benchmarks:
+    text_understanding:
+      enabled: true
+      test_cases: 10
+      categories: ["geography", "science", "literature"]
+
+    problem_solving:
+      enabled: true
+      test_cases: 5
+      categories: ["logic", "mathematics", "reasoning"]
+
+    information_retrieval:
+      enabled: true
+      test_cases: 3
+      categories: ["summarization", "extraction", "synthesis"]
+
+# 性能监控
+monitoring:
+  enabled: true
+  log_level: "INFO"
+  metrics_interval: 30
+  dashboard_refresh_rate: 5
+
+  alert_thresholds:
+    success_rate_min: 0.7
+    avg_execution_time_max: 30.0
+    error_rate_max: 0.2
+
+# 数据存储
+storage:
+  database_url: "sqlite:///data/harness.db"
+  logs_directory: "logs"
+  reports_directory: "reports"
+  data_directory: "data"
+
+  retention_policy:
+    session_data_days: 30
+    performance_metrics_days: 90
+    test_results_days: 180
+
+# API 配置
+api:
+  host: "localhost"
+  port: 8000
+  debug: true
+
+  endpoints:
+    health_check: "/health"
+    agent_status: "/agents/status"
+    submit_task: "/tasks/submit"
+    get_results: "/results/{task_id}"
+    generate_report: "/reports/generate"
+
+# 网络配置
+network:
+  proxy: ""
+  timeout: 30
+  retry_attempts: 3
+  rate_limit_requests_per_second: 10
+
+# 安全配置
+security:
+  api_keys_required: false
+  allowed_origins: ["*"]
+  enable_cors: true
+
+  sensitive_data_masking: true
+  audit_logging: true
+
+# 集成配置
+integrations:
+  # 牛马AI 特定配置
+  niuma_ai:
+    enabled: true
+    skills_integration: true
+    browser_automation: true
+    network_search: true
+
+  # 浏览器自动化
+  browser_use:
+    profile: "default"
+    headless_mode: false
+    download_directory: "./downloads"
+
+  # 网络搜索
+  exa_search:
+    api_key: ""
+    num_results: 10
+    include_domains: []
+    exclude_domains: []
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - type: "console"
+    - type: "file"
+      filename: "logs/harness.log"
+      max_bytes: 10485760  # 10MB
+      backup_count: 5
+
+# 开发工具配置
+development:
+  auto_reload: true
+  debug_mode: true
+  performance_profiling: false
+  memory_monitoring: true
+
+  # 示例数据生成
+  generate_sample_data: false
+  sample_data_size: 100

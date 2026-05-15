@@ -1,0 +1,60 @@
+# AI Agent Harness with Token Optimization - Python Dependencies
+
+# Core Python (built-in)
+asyncio>=3.4.3
+json>=2.0.9
+zlib>=1.2.11
+hashlib>=1.0.4
+datetime>=4.3
+typing>=3.7.4
+functools>=0.0.0
+
+# Optional performance enhancements
+aiofiles>=23.1.0  # Async file operations
+orjson>=3.8.0    # Faster JSON serialization
+ujson>=5.4.0     # Ultra-fast JSON
+
+# Development and testing tools
+pytest>=7.3.1    # Testing framework
+pytest-asyncio>=0.21.0  # Async testing support
+pytest-cov>=4.0.0       # Coverage reporting
+
+# Documentation generation
+mkdocs>=1.4.0    # Documentation site
+mkdocs-material>=9.1.0  # Material theme
+markdown>=3.4.0  # Markdown processing
+
+# Configuration management
+pyyaml>=6.0      # YAML configuration parsing
+pydantic>=1.10.0 # Data validation and settings management
+
+# Monitoring and metrics (optional)
+prometheus-client>=0.16.0  # Metrics collection
+statsd>=3.3.0             # StatsD client
+
+# Database connectivity for knowledge graph (optional)
+sqlalchemy>=2.0.0         # ORM for knowledge storage
+redis>=4.5.0              # Redis cache backend
+
+# HTTP client for API integrations (optional)
+httpx>=0.24.0            # Async HTTP client
+requests>=2.28.0         # Synchronous HTTP client
+
+# Development utilities
+black>=23.3.0            # Code formatting
+isort>=5.12.0            # Import sorting
+flake8>=6.0.0            # Linting
+mypy>=1.2.0              # Type checking
+
+# Note: Many standard library modules are used directly:
+# - asyncio: For asynchronous operations
+# - json: For data serialization
+# - hashlib: For secure hashing in caching
+# - datetime: For timestamp management
+# - functools: For decorators and utility functions
+# - typing: For type hints and annotations
+
+# Installation commands:
+# pip install -r requirements.txt
+# or
+# pip install aiofiles orjson pytest pytest-asyncio mkdocs pyyaml pydantic
