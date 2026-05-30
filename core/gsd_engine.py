@@ -169,36 +169,84 @@ class GSDProject:
             context_info = self._create_fresh_context(phase_index)
             result_data["fresh_context"] = context_info
 
-        # 模拟阶段执行
+        # 阶段执行：基于实际传入参数处理，不使用硬编码返回值
         if phase["name"] == "discuss":
-            result_data["output"] = "需求已明确，目标已定义"
-            result_data["checklist_completed"] = ["需求讨论", "目标确认", "范围界定"]
+            notes = params.get("notes", "")
+            goals = params.get("goals", [])
+            scope = params.get("scope", "")
+            checklist = []
+            if notes or goals or scope:
+                checklist.append("需求讨论")
+            if goals:
+                checklist.append("目标确认")
+            if scope:
+                checklist.append("范围界定")
+            result_data["output"] = notes or "讨论阶段已记录"
+            result_data["goals"] = goals
+            result_data["scope"] = scope
+            result_data["checklist_completed"] = checklist
+            # 更新 artifact
+            self.artifacts["DISCUSS.md"] = (
+                f"# 需求讨论\n\n"
+                f"## 目标\n" + ("\n".join(f"- {g}" for g in goals) if goals else "(未填写)") + "\n\n"
+                f"## 范围\n{scope or '(未填写)'}\n\n"
+                f"## 备注\n{notes or '(无)'}\n"
+            )
 
         elif phase["name"] == "plan":
-            result_data["output"] = "执行计划已编写"
-            result_data["plan_items"] = params.get("plan_items", ["设计架构", "编写代码", "编写测试"])
-            self.artifacts["PLAN.md"] = f"# Plan\n\n" + "\n".join(
-                f"- [ ] {item}" for item in result_data["plan_items"]
+            plan_items = params.get("plan_items", [])
+            result_data["output"] = f"规划阶段完成，共 {len(plan_items)} 个任务项"
+            result_data["plan_items"] = plan_items
+            self.artifacts["PLAN.md"] = (
+                "# 执行计划\n\n"
+                + ("\n".join(f"- [ ] {item}" for item in plan_items) if plan_items else "(待填写)")
             )
 
         elif phase["name"] == "execute":
-            task = params.get("task", "未指定任务")
-            result_data["output"] = f"执行任务: {task}"
-            result_data["files_created"] = params.get("files_created", ["main.py", "utils.py"])
-            result_data["tests_written"] = True
-            result_data["code_quality_score"] = 0.92
+            task = params.get("task", "")
+            files_created = params.get("files_created", [])
+            notes = params.get("notes", "")
+            result_data["output"] = f"执行任务: {task}" if task else "执行阶段已记录"
+            result_data["task"] = task
+            result_data["files_created"] = files_created
+            result_data["notes"] = notes
             result_data["context_isolated"] = True
+            # 记录到 artifacts
+            exec_key = f"EXECUTE_{phase_index}.md"
+            self.artifacts[exec_key] = (
+                f"# 执行记录 (Phase {phase_index})\n\n"
+                f"## 任务\n{task or '(未指定)'}\n\n"
+                f"## 创建的文件\n" + ("\n".join(f"- {f}" for f in files_created) if files_created else "(无)") + "\n\n"
+                f"## 备注\n{notes or '(无)'}\n"
+            )
 
         elif phase["name"] == "verify":
-            result_data["output"] = "验证完成"
-            result_data["tests_passed"] = params.get("tests_passed", 12)
-            result_data["tests_failed"] = params.get("tests_failed", 0)
-            result_data["coverage"] = params.get("coverage", 0.92)
-            result_data["git_diff_clean"] = True
+            tests_passed = params.get("tests_passed")
+            tests_failed = params.get("tests_failed")
+            coverage = params.get("coverage")
+            notes = params.get("notes", "")
+            result_data["output"] = "验证阶段已记录"
+            # 只记录实际传入的数据，不伪造数字
+            if tests_passed is not None:
+                result_data["tests_passed"] = tests_passed
+            if tests_failed is not None:
+                result_data["tests_failed"] = tests_failed
+            if coverage is not None:
+                result_data["coverage"] = coverage
+            result_data["notes"] = notes
+            self.artifacts["VERIFY.md"] = (
+                f"# 验证报告\n\n"
+                f"通过: {tests_passed if tests_passed is not None else '(未填写)'}\n"
+                f"失败: {tests_failed if tests_failed is not None else '(未填写)'}\n"
+                f"覆盖率: {coverage if coverage is not None else '(未填写)'}\n"
+                f"备注: {notes or '(无)'}\n"
+            )
 
         elif phase["name"] == "ship":
-            result_data["output"] = "项目已交付"
+            notes = params.get("notes", "")
+            result_data["output"] = "项目已交付归档"
             result_data["artifacts_archived"] = list(self.artifacts.keys())
+            result_data["notes"] = notes
             self.status = "completed"
 
         # 完成阶段
@@ -229,15 +277,31 @@ class GSDProject:
         }
 
     def _create_fresh_context(self, phase_index: int) -> Dict[str, Any]:
-        """创建200k token新鲜上下文"""
-        return {
-            "context_size": "200k tokens",
-            "isolated": True,
-            "previous_noise_cleared": True,
-            "preserved_artifacts": list(self.artifacts.keys()),
-            "phase": self.phases[phase_index]["display_name"],
-            "created_at": datetime.now().isoformat()
+        """
+        记录上下文隔离状态。
+
+        GSD 的核心价值是：execute 阶段不携带前面 discuss/plan 阶段的
+        调试噪音。这里记录隔离快照，供后续审计和恢复使用。
+        """
+        # 只保留 artifacts 摘要，不携带完整上下文历史
+        artifact_summary = {
+            key: f"({len(content)} chars)" if isinstance(content, str) else str(type(content).__name__)
+            for key, content in self.artifacts.items()
         }
+        # 记录隔离快照到 phase
+        snapshot = {
+            "phase_index": phase_index,
+            "phase_name": self.phases[phase_index]["display_name"],
+            "isolated_at": datetime.now().isoformat(),
+            "context_history_cleared": True,
+            "preserved_artifacts": artifact_summary,
+            "previous_phases_completed": [
+                p["display_name"] for p in self.phases[:phase_index]
+                if p["status"] == "completed"
+            ]
+        }
+        self.phases[phase_index]["context_snapshot"] = snapshot
+        return snapshot
 
     def get_progress(self) -> Dict[str, Any]:
         """获取项目进度"""
