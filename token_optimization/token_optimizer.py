@@ -6,11 +6,9 @@ AI Agent Harness Token Optimization Module
 
 import json
 import hashlib
-import zlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import asyncio
-from functools import lru_cache
 
 class TokenOptimizer:
     """
@@ -91,28 +89,40 @@ class TokenOptimizer:
         return f"{key_instruction}\n\nContext: {json.dumps(context[:3], indent=2)}"
 
     async def _execute_core_logic(self, prompt: str, context: List[Dict]) -> Dict[str, Any]:
-        """模拟核心逻辑执行"""
-        # 在实际应用中，这里会调用真实的AI模型
-        await asyncio.sleep(0.1)  # 模拟API调用延迟
+        """
+        处理优化后的 prompt 和 context，返回结构化结果。
 
+        这里不调用外部 AI 模型——TokenOptimizer 的职责是
+        压缩/缓存/预算管理，实际 AI 调用由上层调用方负责。
+        """
         return {
-            "response": f"Optimized response for: {prompt[:100]}...",
+            "optimized_prompt": prompt,
+            "compressed_context_items": len(context),
             "metadata": {
-                "original_length": len(prompt),
-                "compressed_length": len(json.dumps(context)),
-                "processing_time": 0.1
+                "prompt_length": len(prompt),
+                "context_items": len(context),
+                "processed_at": datetime.now().isoformat()
             }
         }
 
-    def _calculate_tokens_saved(self, original_request: Dict, original_result: Dict) -> int:
-        """计算节省的token数"""
-        original_size = len(json.dumps(original_request)) + len(json.dumps(original_result))
-        # 假设1字符≈1.3 tokens
-        original_tokens = int(original_size * 1.3)
+    def _calculate_tokens_saved(self, original_request: Dict, optimized_result: Dict) -> int:
+        """
+        基于实际字符数估算节省的 token 数。
 
-        # 实际节省基于压缩比和缓存命中率
-        estimated_saved = int(original_tokens * self.config["compression_ratio"])
-        return max(estimated_saved, 0)
+        原始大小 = original_request 的 JSON 字符数
+        优化后大小 = optimized_result 中 optimized_prompt 的字符数
+                    + compressed_context_items 数量（每项按 50 字符估算）
+        差值转换为 token（1 字符 ≈ 0.4 token，中英混合取保守值）
+        """
+        original_chars = len(json.dumps(original_request, ensure_ascii=False))
+
+        optimized_prompt_chars = len(optimized_result.get("optimized_prompt", ""))
+        context_items = optimized_result.get("compressed_context_items", 0)
+        optimized_chars = optimized_prompt_chars + context_items * 50
+
+        chars_saved = max(original_chars - optimized_chars, 0)
+        # 1 字符 ≈ 0.4 token（保守估算，避免虚报）
+        return int(chars_saved * 0.4)
 
 
 class TokenCache:
