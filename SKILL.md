@@ -1,8 +1,8 @@
 ---
 name: harness-integration
-description: AI Agent Harness 集成工具 - 四层工程约束 + 三层复利系统 + Token优化（节省74.5%）
+description: AI Agent Harness - 四层工程约束 + 三层复利系统 + Token优化，直接在牛马AI中调用
 author: SE7EN
-version: 2.1.0
+version: 0.8.0
 tags: [harness, super-powers, gsd, g-stack, gar-tan, token-optimization, ai-engineering]
 ---
 
@@ -12,17 +12,15 @@ tags: [harness, super-powers, gsd, g-stack, gar-tan, token-optimization, ai-engi
 
 ## 🏗️ 架构概览
 
-**四层工程约束（Gyro）+ 三层复利系统（Gar Tan）+ Token优化模块**
-
 ```
 ┌─────────────────────────────────────────────────┐
-│              Token优化层 (节省74.5%)              │
+│              Token优化层                          │
 │  智能缓存 | 上下文压缩 | 知识复用 | Prompt优化 | 监控 │
 ├─────────────────────────────────────────────────┤
-│  第一层: Super Powers     → 编程纪律（7阶段硬门禁） │
-│  第二层: GSD              → 上下文隔离（200k fresh）│
-│  第三层: G-Stack          → 多角色决策（23角色）   │
-│  第四层: Archon (计划中)   → DAG工作流编排         │
+│  第一层: Super Powers  → 7阶段状态机，硬门禁执行   │
+│  第二层: GSD           → 6阶段项目管理，上下文隔离  │
+│  第三层: G-Stack       → 关键词匹配评分，多角色审查 │
+│  第四层: Archon        → DAG工作流编排（计划中）    │
 ├─────────────────────────────────────────────────┤
 │  薄壳调度  →  Skillify自动生成  →  Brain Page积累  │
 └─────────────────────────────────────────────────┘
@@ -35,42 +33,45 @@ tags: [harness, super-powers, gsd, g-stack, gar-tan, token-optimization, ai-engi
 /harness status
 ```
 
-### Super Powers (第一层: 纪律)
+### Super Powers（第一层：编程纪律）
 ```
-/harness super-powers brainstorm "任务描述"
-/harness super-powers tdd-check "代码片段"
-/harness super-powers git-isolate "项目名称"
-/harness super-powers status
-```
-
-### GSD (第二层: 上下文隔离)
-```
-/harness gsd new-project "项目名称"
-/harness gsd execute-phase "原子任务"
-/harness gsd verify-work "检查结果"
-/harness gsd status
+/harness super-powers create-session '{"project": "任务名称"}'
+/harness super-powers advance '{"session_id": "xxx", "checklist_completed": ["需求确认"]}'
+/harness super-powers status '{"session_id": "xxx"}'
+/harness super-powers list-stages
+/harness super-powers list-sessions
 ```
 
-### G-Stack (第三层: 多角色决策)
+### GSD（第二层：上下文隔离）
 ```
-/harness g-stack office-hours "讨论主题"
-/harness g-stack role-review "ceo"
+/harness gsd new-project '{"name": "项目名称", "description": "描述"}'
+/harness gsd execute-phase '{"project_id": "xxx", "task": "原子任务", "command": "/gsd-execute-phase"}'
+/harness gsd run-command '{"project_id": "xxx", "command": "/gsd-plan-phase", "plan_items": ["步骤1"]}'
+/harness gsd status '{"project_id": "xxx"}'
+/harness gsd list-projects
+```
+
+### G-Stack（第三层：多角色决策）
+```
+/harness g-stack office-hours '{"topic": "讨论主题", "content": "方案内容"}'
+/harness g-stack recommend-roles '{"topic": "主题"}'
 /harness g-stack list-roles
+/harness g-stack history
 ```
 
-### Gar Tan (复利系统)
+### Gar Tan（三层复利系统）
 ```
-/harness gar-tan mirror-book "书名"
-/harness gar-tan analyze-meeting "会议记录"
-/harness gar-tan knowledge-graph
-/harness gar-tan brain-page "page_id"
+/harness gar-tan mirror-book '{"title": "书名", "content": "书的内容"}'
+/harness gar-tan analyze-meeting '{"transcript": "会议记录", "participants": "张三,李四"}'
+/harness gar-tan query '{"query": "搜索关键词"}'
+/harness gar-tan dashboard
 ```
 
 ### Token优化
 ```
 /harness token status
-/harness token optimize-prompt "长prompt"
-/harness token compress-context
+/harness token optimize-prompt '{"prompt": "长prompt", "budget": 5000}'
+/harness token compress-context '{"context": [...]}'
 /harness token cache-stats
 ```
 
@@ -79,50 +80,49 @@ tags: [harness, super-powers, gsd, g-stack, gar-tan, token-optimization, ai-engi
 /harness monitor stats
 /harness monitor suggestions
 /harness monitor report
+/harness monitor record '{"module": "gsd", "action": "execute", "tokens_in": 500, "tokens_out": 200}'
 ```
 
 ## 💡 使用案例
 
 ### 案例1：开始新功能开发
 ```
-/harness super-powers brainstorm "实现用户权限管理系统"
+/harness super-powers create-session '{"project": "实现用户权限管理系统"}'
 ```
-→ 强制需求脑暴，防止模糊需求直接进入开发
+→ 创建7阶段会话，强制从需求脑暴开始，不允许跳过
 
 ### 案例2：处理复杂重构
 ```
-/harness gsd new-project "API权限模块重构"
-/harness gsd execute-phase "设计新的权限架构"
+/harness gsd new-project '{"name": "API权限模块重构"}'
+/harness gsd run-command '{"project_id": "xxx", "command": "/gsd-execute-phase", "task": "设计新权限架构"}'
 ```
-→ 每个phase都是200k fresh context，无历史噪音
+→ 每个 execute phase 记录上下文隔离快照，artifacts 跨阶段持久化
 
 ### 案例3：产品决策
 ```
-/harness g-stack office-hours "数据导出功能设计"
+/harness g-stack office-hours '{"topic": "数据导出功能设计", "content": "方案描述..."}'
 ```
-→ 多角色并行讨论，避免单一视角盲区
+→ 基于内容关键词与角色职责匹配评分，自动推荐相关角色
 
 ### 案例4：学习积累
 ```
-/harness gar-tan mirror-book "When Things Fall Apart"
+/harness gar-tan mirror-book '{"title": "书名", "content": "章节内容..."}'
 ```
-→ 书籍镜像到知识图谱，积累个人知识护城河
+→ 提取概念写入内存知识图谱，支持后续 query 检索
 
-### 案例5：Token优化
-```
-/harness token status
-```
-→ 查看各模块token节省效果
+## 🔍 各模块实现状态
 
-## 📊 Token优化效果
-
-| 模块 | 优化前 | 优化后 | 节省 |
-|------|--------|--------|------|
-| Super Powers脑暴 | 8,500 | 2,100 | 75% |
-| GSD长任务 | 45,000 | 12,000 | 73% |
-| G-Stack决策 | 18,000 | 4,500 | 75% |
-| Gar Tan镜像 | 15,000 | 3,500 | 77% |
-| **总计** | **86,500** | **22,100** | **74.5%** |
+| 模块 | 状态 | 实现说明 |
+|------|------|---------|
+| Super Powers | ✅ 已实现 | 真实7阶段状态机，硬门禁强制执行 |
+| GSD | ✅ 已实现 | 真实6阶段项目管理，上下文隔离记录 |
+| G-Stack | ✅ 已实现 | 基于关键词匹配的角色评分（非AI调用） |
+| Gar Tan | ✅ 已实现 | 内存知识图谱，Jaccard相似度搜索 |
+| Token缓存 | ✅ 已实现 | LRU + 模式匹配 + 上下文复用三级缓存 |
+| Token压缩 | ✅ 已实现 | 去噪 + 关键状态提取 |
+| Token监控 | ✅ 已实现 | 实时统计 + 告警 + 报告 |
+| Archon | 🔲 计划中 | YAML DAG工作流编排 |
+| 知识图谱持久化 | 🔲 计划中 | 当前为内存存储，重启后清空 |
 
 ## 🎯 演进路径
 
@@ -130,8 +130,7 @@ tags: [harness, super-powers, gsd, g-stack, gar-tan, token-optimization, ai-engi
 Day 1:   Super Powers → 建立编程纪律
 Week 1:  + GSD        → 管理长任务上下文
 Month 1: + G-Stack    → 多视角决策质量
-Long:    + Gar Tan    → 个人知识护城河
-Always:  + Token优化  → 持续节省token消耗
+Long:    + Gar Tan    → 个人知识积累
 ```
 
 ## 💎 核心理念
@@ -140,51 +139,9 @@ Always:  + Token优化  → 持续节省token消耗
 
 **Gar Tan**: "竞争优势 = 模型引擎 + 技能文件 + 数据积累 + 关系网络"
 
-## 📁 文件结构
-
-```
-harness-integration/
-├── SKILL.md                        # 技能描述（本文件）
-├── harness_skill.py                # 主调用接口
-├── README.md                       # 完整系统介绍
-├── core_modules.md                 # 核心模块说明
-├── core/                           # 四层工程约束核心代码（9个文件）
-│   ├── super_powers.py            # 第一层：7阶段强制纪律
-│   ├── gsd_engine.py              # 第二层：200k上下文隔离
-│   ├── gstack_roles.py            # 第三层：23角色多视角审查
-│   ├── gary_tan_system.py         # Gar Tan三层复利系统
-│   ├── agent_controller.py        # 代理控制器
-│   ├── test_scenarios.py          # 测试场景引擎
-│   ├── evaluation_metrics.py      # 评估指标系统
-│   ├── dashboard.py               # 可视化仪表板
-│   └── main.py                    # 主程序入口
-├── token_optimization/             # Token优化模块（9个文件）
-│   ├── config.yaml                # 优化配置
-│   ├── README.md                  # 优化模块文档
-│   ├── token_optimizer.py         # 核心优化引擎
-│   ├── cache_manager.py           # 三级智能缓存
-│   ├── context_compressor.py      # 上下文压缩器
-│   ├── knowledge_reuse.py         # 知识复用引擎
-│   ├── prompt_optimizer.py        # Prompt优化器
-│   ├── token_monitor.py           # Token监控器
-│   ├── token_optimization_demo.py # 演示脚本
-│   └── token_optimization_guide.md# 详细使用指南
-├── config/                         # 配置管理
-│   ├── config.yaml                # 完整配置文件
-│   └── requirements.txt           # Python依赖
-├── docs/                           # 文档资料
-│   ├── README.md                  # 项目说明
-│   ├── QUICK_START.md             # 快速入门
-│   ├── SYSTEM_STATUS.md           # 系统状态
-│   └── CLAUDE.md                  # 开发规范
-└── tests/                          # 测试文件
-    ├── integrated_demo.py         # 集成演示
-    └── system_validation.py       # 系统验证
-```
-
 ## ⚠️ 注意事项
 
-- **依赖**：核心功能仅需Python 3.8+标准库。rich和matplotlib为可选依赖
-- **建议**：从Super Powers开始，逐步叠加其他层次
-- **Token优化**：默认启用，无需手动开启
-- **知识图谱**：数据持久化存储，长期积累复利效应
+- 核心功能仅需 Python 3.8+ 标准库，无需安装第三方包
+- `rich`、`matplotlib` 为可选依赖，缺少时自动降级为标准输出
+- Gar Tan 知识图谱当前为内存存储，进程重启后数据清空
+- G-Stack 评分基于关键词匹配，不调用 AI 模型
