@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-AI Agent Harness - 牛马AI Skill主调用接口
+AI Agent Harness v0.8 - 牛马AI Skill主调用接口
+
 整合四层工程约束 + 三层复利系统 + Token优化模块
 
 使用方法:
     python harness_skill.py <module> <action> [params_json]
 
 模块列表:
-    super-powers  - Super Powers纪律引擎
-    gsd           - GSD上下文隔离引擎
-    g-stack       - G-Stack多角色决策
-    gar-tan       - Gar Tan三层复利系统
+    super-powers  - Super Powers纪律引擎（7阶段状态机）
+    gsd           - GSD上下文隔离引擎（6阶段项目管理）
+    g-stack       - G-Stack多角色决策（基于关键词匹配评分）
+    gar-tan       - Gar Tan三层复利系统（知识图谱积累）
     token         - Token优化模块
     monitor       - Token监控
     status        - 系统状态总览
@@ -21,16 +22,39 @@ import json
 import os
 from datetime import datetime
 
-
 # ============================================================
 # 路径配置
 # ============================================================
 SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
+CORE_DIR = os.path.join(SKILL_DIR, "core")
 TOKEN_OPT_DIR = os.path.join(SKILL_DIR, "token_optimization")
 
 
-def load_token_module(module_name: str):
-    """动态加载token优化模块"""
+def _load_core_module(module_name: str):
+    """动态加载 core/ 目录下的模块"""
+    sys.path.insert(0, CORE_DIR)
+    try:
+        if module_name == "super_powers":
+            from super_powers import SuperPowersEngine
+            return SuperPowersEngine()
+        elif module_name == "gsd_engine":
+            from gsd_engine import GSDEngine
+            return GSDEngine()
+        elif module_name == "gstack_roles":
+            from gstack_roles import GStackEngine
+            return GStackEngine()
+        elif module_name == "gary_tan_system":
+            from gary_tan_system import GarTanSystem
+            return GarTanSystem()
+    except ImportError as e:
+        return {"error": f"Failed to load core/{module_name}: {str(e)}"}
+    finally:
+        if CORE_DIR in sys.path:
+            sys.path.remove(CORE_DIR)
+
+
+def _load_token_module(module_name: str):
+    """动态加载 token_optimization/ 目录下的模块"""
     sys.path.insert(0, TOKEN_OPT_DIR)
     try:
         if module_name == "token_optimizer":
@@ -52,208 +76,260 @@ def load_token_module(module_name: str):
             from token_monitor import TokenMonitor
             return TokenMonitor()
     except ImportError as e:
-        return {"error": f"Failed to load {module_name}: {str(e)}"}
+        return {"error": f"Failed to load token_optimization/{module_name}: {str(e)}"}
     finally:
-        sys.path.pop(0)
+        if TOKEN_OPT_DIR in sys.path:
+            sys.path.remove(TOKEN_OPT_DIR)
 
 
 # ============================================================
 # Super Powers - 第一层纪律引擎
 # ============================================================
 def call_super_powers(action: str, params: dict) -> dict:
-    """Super Powers 7阶段强制纪律"""
-    if action == "brainstorm":
-        task = params.get("task", "")
+    """调用 core/super_powers.py 的 SuperPowersEngine"""
+    engine = _load_core_module("super_powers")
+    if isinstance(engine, dict) and "error" in engine:
+        return engine
+
+    if action == "create-session":
+        project_name = params.get("project", params.get("task", "Untitled"))
+        description = params.get("description", "")
+        session = engine.create_session(project_name, description)
         return {
             "module": "super-powers",
-            "action": "brainstorm",
-            "result": f"Super Powers Brainstorming: {task}",
-            "stages": [
-                "1. Brainstorming - 需求脑暴",
-                "2. Git Worktrees - 隔离实验环境",
-                "3. Planning - 写spec和PLAN",
-                "4. Execution - 代码执行",
-                "5. TDD - 测试驱动开发",
-                "6. Code Review - 双重审查",
-                "7. Branch Completion - 合并分支"
-            ],
-            "hard_gate": "强制门禁，不允许跳过任何阶段！",
-            "token_optimization": "已启用智能缓存 + 上下文压缩"
+            "action": "create-session",
+            "session_id": session.session_id,
+            "project": project_name,
+            "current_stage": session.get_current_stage_info(),
+            "progress": session.get_progress()
         }
-    elif action == "tdd-check":
-        code = params.get("code", "")
-        return {
-            "module": "super-powers",
-            "action": "tdd-check",
-            "result": "TDD验证结果",
-            "tests_passed": True,
-            "missing_tests": [],
-            "guidance": "如果缺少测试数据，Agent会停下来要求提供mock data"
-        }
-    elif action == "git-isolate":
-        project = params.get("project", "NewProject")
-        return {
-            "module": "super-powers",
-            "action": "git-isolate",
-            "result": f"Git worktree已创建: {project}",
-            "workspace": f"worktrees/{project}",
-            "isolation_level": "full"
-        }
+
+    elif action == "advance":
+        session_id = params.get("session_id", "")
+        session = engine.get_session(session_id)
+        if not session:
+            # 没有 session_id 时自动创建一个临时 session
+            task = params.get("task", "Unnamed Task")
+            session = engine.create_session(task)
+        checklist_completed = params.get("checklist_completed", [])
+        result = session.advance({"checklist_completed": checklist_completed})
+        return {"module": "super-powers", "action": "advance", **result}
+
     elif action == "status":
+        session_id = params.get("session_id", "")
+        session = engine.get_session(session_id)
+        if not session:
+            return {
+                "module": "super-powers",
+                "action": "status",
+                "sessions": engine.list_sessions(),
+                "all_stages": engine.get_all_stages()
+            }
         return {
             "module": "super-powers",
-            "stages_completed": params.get("completed", 0),
-            "current_stage": params.get("current", "brainstorming"),
-            "hard_gates_passed": params.get("gates_passed", 0)
+            "action": "status",
+            "session_id": session_id,
+            "progress": session.get_progress(),
+            "current_stage": session.get_current_stage_info()
         }
+
+    elif action == "list-stages":
+        return {
+            "module": "super-powers",
+            "action": "list-stages",
+            "stages": engine.get_all_stages()
+        }
+
+    elif action == "list-sessions":
+        return {
+            "module": "super-powers",
+            "action": "list-sessions",
+            "sessions": engine.list_sessions()
+        }
+
     else:
-        return {"error": f"Unknown action: {action}", "available": ["brainstorm", "tdd-check", "git-isolate", "status"]}
+        return {
+            "error": f"Unknown action: {action}",
+            "available": ["create-session", "advance", "status", "list-stages", "list-sessions"]
+        }
 
 
 # ============================================================
 # GSD - 第二层上下文隔离
 # ============================================================
 def call_gsd(action: str, params: dict) -> dict:
-    """GSD 200k token上下文隔离"""
+    """调用 core/gsd_engine.py 的 GSDEngine"""
+    engine = _load_core_module("gsd_engine")
+    if isinstance(engine, dict) and "error" in engine:
+        return engine
+
     if action == "new-project":
         name = params.get("name", "Untitled")
+        description = params.get("description", "")
+        project = engine.create_project(name, description)
         return {
             "module": "gsd",
             "action": "new-project",
-            "result": f"GSD项目 '{name}' 已创建",
-            "phases": 6,
-            "artifacts": ["README.md", "requirements.txt"],
-            "command_loop": "new-project → discuss → plan → execute → verify → ship",
-            "token_saving": "每个phase都是200k fresh context，节省73%"
+            "project_id": project.project_id,
+            "name": name,
+            "progress": project.get_progress()
         }
+
     elif action == "execute-phase":
+        project_id = params.get("project_id", "")
         task = params.get("task", "")
-        return {
-            "module": "gsd",
-            "action": "execute-phase",
-            "result": f"执行原子任务: {task}",
-            "fresh_context": "200k token全新上下文",
-            "isolation": "无前一phase的调试噪音"
-        }
-    elif action == "verify-work":
-        result = params.get("result", "")
-        return {
-            "module": "gsd",
-            "action": "verify-work",
-            "result": "工作验证完成",
-            "quality_score": 0.92,
-            "git_diff_clean": True
-        }
+        command = params.get("command", "/gsd-execute-phase")
+
+        project = engine.get_project(project_id)
+        if not project:
+            # 没有 project_id 时自动创建
+            project = engine.create_project(task or "Auto Project")
+
+        result = project.execute_command(command, {"task": task, **params})
+        return {"module": "gsd", "action": "execute-phase", **result}
+
+    elif action == "run-command":
+        command = params.get("command", "")
+        project_id = params.get("project_id", "")
+        project = engine.get_project(project_id)
+        if not project:
+            return {"error": "project_id not found. Use new-project first."}
+        result = project.execute_command(command, params)
+        return {"module": "gsd", "action": "run-command", **result}
+
     elif action == "status":
+        project_id = params.get("project_id", "")
+        project = engine.get_project(project_id)
+        if not project:
+            return {
+                "module": "gsd",
+                "action": "status",
+                "projects": engine.list_projects()
+            }
         return {
             "module": "gsd",
-            "active_projects": params.get("projects", 0),
-            "phases_completed": params.get("phases", 0),
-            "contexts_isolated": params.get("contexts", 0)
+            "action": "status",
+            "project_id": project_id,
+            "progress": project.get_progress()
         }
+
+    elif action == "list-projects":
+        return {
+            "module": "gsd",
+            "action": "list-projects",
+            "projects": engine.list_projects()
+        }
+
     else:
-        return {"error": f"Unknown action: {action}", "available": ["new-project", "execute-phase", "verify-work", "status"]}
+        return {
+            "error": f"Unknown action: {action}",
+            "available": ["new-project", "execute-phase", "run-command", "status", "list-projects"]
+        }
 
 
 # ============================================================
 # G-Stack - 第三层多角色决策
 # ============================================================
 def call_g_stack(action: str, params: dict) -> dict:
-    """G-Stack 23角色多视角审查"""
+    """调用 core/gstack_roles.py 的 GStackEngine"""
+    engine = _load_core_module("gstack_roles")
+    if isinstance(engine, dict) and "error" in engine:
+        return engine
+
     if action == "office-hours":
         topic = params.get("topic", "")
-        roles = params.get("roles", "ceo,pm,tech-lead")
-        role_list = [r.strip() for r in roles.split(",")]
-        return {
-            "module": "g-stack",
-            "action": "office-hours",
-            "result": f"Office Hours: {topic}",
-            "participants": role_list,
-            "consensus_score": 0.885,
-            "decision_points": [
-                "采用渐进式实施策略",
-                "优先高ROI功能",
-                "关注安全合规"
-            ],
-            "token_optimization": "角色审查结果已缓存，相似讨论可复用"
-        }
-    elif action == "role-review":
-        role = params.get("role", "ceo")
+        roles_param = params.get("roles", "")
         content = params.get("content", "")
+
+        if roles_param:
+            participants = [r.strip() for r in roles_param.split(",")]
+        else:
+            # 根据 topic 自动推荐角色
+            participants = engine.recommend_roles(topic)
+
+        result = engine.conduct_office_hours(topic, participants, content)
+        return {"module": "g-stack", "action": "office-hours", **result}
+
+    elif action == "recommend-roles":
+        topic = params.get("topic", "")
+        recommended = engine.recommend_roles(topic)
         return {
             "module": "g-stack",
-            "action": "role-review",
-            "result": f"{role.upper()} 审查完成",
-            "score": 0.92,
-            "feedback": f"{role}视角的反馈已生成"
+            "action": "recommend-roles",
+            "topic": topic,
+            "recommended_roles": recommended
         }
+
     elif action == "list-roles":
+        all_roles = engine.get_all_roles()
+        by_category = {}
+        for role_id, role_def in all_roles.items():
+            cat = role_def.get("category", "other")
+            by_category.setdefault(cat, []).append(role_id)
         return {
             "module": "g-stack",
-            "roles": {
-                "product": ["ceo", "pm", "ux-designer", "data-analyst"],
-                "engineering": ["tech-lead", "senior-dev", "junior-dev", "architect"],
-                "security": ["security-architect", "security-engineer"],
-                "operations": ["devops", "sre", "qa-lead"],
-                "business": ["sales-lead", "marketing", "support"]
-            },
-            "usage_tip": "不要一次用所有角色！按需选择2-4个最相关的角色"
+            "action": "list-roles",
+            "total": len(all_roles),
+            "by_category": by_category
         }
+
+    elif action == "history":
+        return {
+            "module": "g-stack",
+            "action": "history",
+            "history": engine.get_history()
+        }
+
     else:
-        return {"error": f"Unknown action: {action}", "available": ["office-hours", "role-review", "list-roles"]}
+        return {
+            "error": f"Unknown action: {action}",
+            "available": ["office-hours", "recommend-roles", "list-roles", "history"]
+        }
 
 
 # ============================================================
 # Gar Tan - 三层复利系统
 # ============================================================
 def call_gar_tan(action: str, params: dict) -> dict:
-    """Gar Tan 薄壳调度 + Skillify生成 + Brain Page积累"""
+    """调用 core/gary_tan_system.py 的 GarTanSystem"""
+    system = _load_core_module("gary_tan_system")
+    if isinstance(system, dict) and "error" in system:
+        return system
+
     if action == "mirror-book":
         title = params.get("title", "")
         content = params.get("content", "")
-        return {
-            "module": "gar-tan",
-            "action": "mirror-book",
-            "result": f"书籍已镜像: {title}",
-            "chapters_processed": 10,
-            "concepts_mapped": 25,
-            "skill_generated": True,
-            "knowledge_density": 5.0,
-            "token_optimization": "知识复用引擎已启用，复用率越高token越省"
-        }
+        if not title:
+            return {"error": "title is required"}
+        result = system.mirror_book(title, content)
+        return {"module": "gar-tan", "action": "mirror-book", **result}
+
     elif action == "analyze-meeting":
         transcript = params.get("transcript", "")
-        participants = params.get("participants", "")
-        return {
-            "module": "gar-tan",
-            "action": "analyze-meeting",
-            "result": "会议分析完成",
-            "participants_updated": len(participants.split(",")) if participants else 0,
-            "action_items_extracted": 5,
-            "decisions_captured": 3
-        }
-    elif action == "knowledge-graph":
-        return {
-            "module": "gar-tan",
-            "action": "knowledge-graph",
-            "result": "知识图谱仪表板",
-            "total_pages": 25,
-            "knowledge_density": 4.8,
-            "recent_updates": 3,
-            "compounding_effect": "每次学习都让下一次更快更准"
-        }
-    elif action == "brain-page":
-        page_id = params.get("page_id", "")
-        return {
-            "module": "gar-tan",
-            "action": "brain-page",
-            "result": f"Brain Page: {page_id}",
-            "content_summary": "个人知识库页面",
-            "linked_concepts": 8,
-            "last_updated": datetime.now().isoformat()
-        }
+        participants_raw = params.get("participants", "")
+        if isinstance(participants_raw, str):
+            participants = [p.strip() for p in participants_raw.split(",") if p.strip()]
+        else:
+            participants = participants_raw
+        result = system.analyze_meeting(transcript, participants)
+        return {"module": "gar-tan", "action": "analyze-meeting", **result}
+
+    elif action == "query":
+        query = params.get("query", "")
+        if not query:
+            return {"error": "query is required"}
+        result = system.query_knowledge(query)
+        return {"module": "gar-tan", "action": "query", **result}
+
+    elif action == "dashboard":
+        result = system.get_system_dashboard()
+        return {"module": "gar-tan", "action": "dashboard", **result}
+
     else:
-        return {"error": f"Unknown action: {action}", "available": ["mirror-book", "analyze-meeting", "knowledge-graph", "brain-page"]}
+        return {
+            "error": f"Unknown action: {action}",
+            "available": ["mirror-book", "analyze-meeting", "query", "dashboard"]
+        }
 
 
 # ============================================================
@@ -261,64 +337,48 @@ def call_gar_tan(action: str, params: dict) -> dict:
 # ============================================================
 def call_token(action: str, params: dict) -> dict:
     """Token优化模块接口"""
-    if action == "status":
-        monitor = load_token_module("token_monitor")
-        if isinstance(monitor, dict) and "error" in monitor:
-            return monitor
-        return {
-            "module": "token-optimization",
-            "action": "status",
-            "components": {
-                "cache_manager": "三级智能缓存 (L1 LRU + L2模式 + L3上下文)",
-                "context_compressor": "上下文压缩器 (去噪+提取+编码)",
-                "knowledge_reuse": "知识复用引擎 (知识图谱+相似匹配)",
-                "prompt_optimizer": "Prompt优化器 (智能截断+模板化)",
-                "token_monitor": "Token监控器 (实时统计+告警)"
-            },
-            "overall_saving": "74.5%",
-            "breakdown": {
-                "cache": "30-40%",
-                "compression": "20-30%",
-                "knowledge_reuse": "25-35%",
-                "prompt_opt": "15-25%"
-            }
-        }
-    elif action == "optimize-prompt":
-        optimizer = load_token_module("prompt_optimizer")
+    if action == "optimize-prompt":
+        optimizer = _load_token_module("prompt_optimizer")
         if isinstance(optimizer, dict) and "error" in optimizer:
             return optimizer
         prompt = params.get("prompt", "")
         budget = params.get("budget", 5000)
         result = optimizer.optimize(prompt, budget=budget)
-        return {
-            "module": "token-optimization",
-            "action": "optimize-prompt",
-            "result": result
-        }
+        return {"module": "token", "action": "optimize-prompt", "result": result}
+
     elif action == "compress-context":
-        compressor = load_token_module("context_compressor")
+        compressor = _load_token_module("context_compressor")
         if isinstance(compressor, dict) and "error" in compressor:
             return compressor
         context = params.get("context", [])
         compressed = compressor.compress_context(context)
         stats = compressor.get_compression_stats(context, compressed)
-        return {
-            "module": "token-optimization",
-            "action": "compress-context",
-            "compressed": compressed,
-            "stats": stats
-        }
+        return {"module": "token", "action": "compress-context", "compressed": compressed, "stats": stats}
+
     elif action == "cache-stats":
-        cache = load_token_module("cache_manager")
+        cache = _load_token_module("cache_manager")
         if isinstance(cache, dict) and "error" in cache:
             return cache
+        return {"module": "token", "action": "cache-stats", "stats": cache.get_stats()}
+
+    elif action == "status":
         return {
-            "module": "token-optimization",
-            "action": "cache-stats",
-            "stats": cache.get_stats()
+            "module": "token",
+            "action": "status",
+            "components": {
+                "cache_manager": "三级智能缓存 (L1 LRU + L2模式 + L3上下文)",
+                "context_compressor": "上下文压缩器 (去噪+提取+编码)",
+                "knowledge_reuse": "知识复用引擎 (Jaccard相似度匹配)",
+                "prompt_optimizer": "Prompt优化器 (智能截断+模板化)",
+                "token_monitor": "Token监控器 (实时统计+告警)"
+            }
         }
+
     else:
-        return {"error": f"Unknown action: {action}", "available": ["status", "optimize-prompt", "compress-context", "cache-stats"]}
+        return {
+            "error": f"Unknown action: {action}",
+            "available": ["optimize-prompt", "compress-context", "cache-stats", "status"]
+        }
 
 
 # ============================================================
@@ -326,16 +386,13 @@ def call_token(action: str, params: dict) -> dict:
 # ============================================================
 def call_monitor(action: str, params: dict) -> dict:
     """Token监控接口"""
-    monitor = load_token_module("token_monitor")
+    monitor = _load_token_module("token_monitor")
     if isinstance(monitor, dict) and "error" in monitor:
         return monitor
 
     if action == "stats":
-        return {
-            "module": "monitor",
-            "action": "stats",
-            "stats": monitor.get_realtime_stats()
-        }
+        return {"module": "monitor", "action": "stats", "stats": monitor.get_realtime_stats()}
+
     elif action == "record":
         module = params.get("module", "unknown")
         act = params.get("action", "unknown")
@@ -347,18 +404,13 @@ def call_monitor(action: str, params: dict) -> dict:
             "action": "record",
             "result": f"已记录: {module}/{act} ({tokens_in + tokens_out} tokens)"
         }
+
     elif action == "suggestions":
-        return {
-            "module": "monitor",
-            "action": "suggestions",
-            "suggestions": monitor.get_optimization_suggestions()
-        }
+        return {"module": "monitor", "action": "suggestions", "suggestions": monitor.get_optimization_suggestions()}
+
     elif action == "report":
-        return {
-            "module": "monitor",
-            "action": "report",
-            "report": monitor.generate_report()
-        }
+        return {"module": "monitor", "action": "report", "report": monitor.generate_report()}
+
     else:
         return {"error": f"Unknown action: {action}", "available": ["stats", "record", "suggestions", "report"]}
 
@@ -370,46 +422,44 @@ def get_system_status() -> dict:
     """获取完整系统状态"""
     return {
         "system": "AI Agent Harness",
-        "version": "2.0.0",
+        "version": "0.8.0",
         "timestamp": datetime.now().isoformat(),
         "layers": {
             "layer1_super_powers": {
                 "name": "Super Powers - 编程纪律",
                 "status": "active",
-                "stages": 7,
-                "key_feature": "硬门禁，不允许跳过TDD"
+                "implementation": "真实7阶段状态机，硬门禁强制执行",
+                "stages": 7
             },
             "layer2_gsd": {
                 "name": "GSD - 上下文隔离",
                 "status": "active",
-                "phases": 6,
-                "key_feature": "200k fresh context per phase"
+                "implementation": "真实6阶段项目管理，上下文隔离记录",
+                "phases": 6
             },
             "layer3_gstack": {
                 "name": "G-Stack - 多角色决策",
                 "status": "active",
-                "roles": 23,
-                "key_feature": "多角色并行审查"
+                "implementation": "基于关键词匹配的角色评分，非AI调用",
+                "roles": 24
             },
             "layer4_gar_tan": {
                 "name": "Gar Tan - 三层复利",
                 "status": "active",
-                "components": ["薄壳调度", "Skillify生成", "Brain Page"],
-                "key_feature": "知识积累复利效应"
+                "implementation": "真实内存知识图谱，Jaccard相似度搜索",
+                "components": ["ThinShellScheduler", "SkillifyEngine", "BrainDataManager"]
             }
         },
         "token_optimization": {
             "status": "active",
-            "overall_saving": "74.5%",
             "components": {
-                "cache_manager": "三级智能缓存",
-                "context_compressor": "上下文压缩",
-                "knowledge_reuse": "知识复用",
-                "prompt_optimizer": "Prompt优化",
-                "token_monitor": "实时监控"
+                "cache_manager": "LRU + 模式匹配 + 上下文复用三级缓存",
+                "context_compressor": "去噪+关键状态提取",
+                "knowledge_reuse": "Jaccard相似度知识复用",
+                "prompt_optimizer": "智能截断+模板化",
+                "token_monitor": "实时统计+告警"
             }
-        },
-        "competitive_advantage": "护城河 = 模型引擎 + 技能文件 + 数据积累 + 关系网络"
+        }
     }
 
 
@@ -450,7 +500,13 @@ def main():
         print(json.dumps({
             "usage": "python harness_skill.py <module> <action> [params_json]",
             "modules": ["super-powers", "gsd", "g-stack", "gar-tan", "token", "monitor", "status"],
-            "example": 'python harness_skill.py super-powers brainstorm \'{"task": "实现登录"}\''
+            "examples": [
+                'python harness_skill.py super-powers create-session \'{"project": "实现登录"}\'',
+                'python harness_skill.py gsd new-project \'{"name": "用户系统重构"}\'',
+                'python harness_skill.py g-stack office-hours \'{"topic": "API设计"}\'',
+                'python harness_skill.py gar-tan mirror-book \'{"title": "书名", "content": "内容"}\'',
+                'python harness_skill.py status'
+            ]
         }, indent=2, ensure_ascii=False))
         return
 
