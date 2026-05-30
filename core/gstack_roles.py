@@ -221,25 +221,66 @@ class OfficeHours:
         }
 
     def _review_as_role(self, role_id: str, role_def: Dict[str, Any], content: str) -> RoleReview:
-        """以特定角色视角审查"""
+        """
+        以特定角色视角审查内容。
+
+        评分逻辑：检查 content 中是否覆盖了该角色的关注点和评分标准。
+        每个关注点命中 +1 分，每个评分标准命中 +1 分，
+        最终归一化到 [0.5, 1.0] 区间。
+        没有内容时给中性分 0.6。
+        """
         review = RoleReview(role_id, role_def)
-
-        # 基于角色关注点生成评分和反馈
         focus_areas = role_def["focus"]
-        scoring = role_def["scoring_criteria"]
+        scoring_criteria = role_def["scoring_criteria"]
 
-        # 模拟评分（实际应用中这里会调用AI模型）
-        import hashlib
-        hash_val = int(hashlib.md5(f"{role_id}_{content}".encode()).hexdigest()[:4], 16)
-        review.score = 0.7 + (hash_val % 30) / 100
-        review.score = min(review.score, 0.98)
+        if not content.strip():
+            review.score = 0.6
+            review.feedback = [f"未提供内容，无法评估{focus}" for focus in focus_areas[:2]]
+            review.concerns = ["内容为空，建议补充具体方案描述"]
+            return review
 
-        review.feedback = [f"{focus}视角: 通过审查" for focus in focus_areas[:2]]
-        review.recommendations = [f"建议关注{criterion}" for criterion in scoring[:2]]
+        content_lower = content.lower()
 
-        # 低分时添加担忧
-        if review.score < 0.8:
-            review.concerns = [f"对{focus}存在疑虑" for focus in focus_areas[:1]]
+        # 关注点命中检测：把每个关注点拆成关键词，检查是否出现在内容中
+        focus_hits = []
+        focus_misses = []
+        for focus in focus_areas:
+            # 拆分关注点为词（中文按字符，英文按空格）
+            keywords = [w for w in focus.replace("、", " ").replace("/", " ").split() if len(w) > 1]
+            hit = any(kw.lower() in content_lower for kw in keywords) if keywords else False
+            if hit:
+                focus_hits.append(focus)
+            else:
+                focus_misses.append(focus)
+
+        # 评分标准命中检测
+        criteria_hits = []
+        criteria_misses = []
+        for criterion in scoring_criteria:
+            keywords = [w for w in criterion.replace("、", " ").replace("/", " ").split() if len(w) > 1]
+            hit = any(kw.lower() in content_lower for kw in keywords) if keywords else False
+            if hit:
+                criteria_hits.append(criterion)
+            else:
+                criteria_misses.append(criterion)
+
+        # 计算分数：命中率映射到 [0.5, 1.0]
+        total_checks = len(focus_areas) + len(scoring_criteria)
+        total_hits = len(focus_hits) + len(criteria_hits)
+        hit_rate = total_hits / total_checks if total_checks > 0 else 0.0
+        review.score = 0.5 + hit_rate * 0.5
+
+        # 生成有意义的反馈
+        if focus_hits:
+            review.feedback = [f"内容覆盖了「{f}」" for f in focus_hits]
+        else:
+            review.feedback = [f"内容未提及{role_def['name']}关注的任何方面"]
+
+        if criteria_misses:
+            review.recommendations = [f"建议补充「{c}」相关内容" for c in criteria_misses[:2]]
+
+        if focus_misses:
+            review.concerns = [f"缺少对「{f}」的说明" for f in focus_misses[:2]]
 
         return review
 
